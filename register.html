@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>會員註冊</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--accent:#f97316;--accent2:#ea580c;--ink:#1a1a2e;--ink2:#4a5568;--ink3:#a0aec0;--border:#e2e8f0;--surface:#fff;--bg:#fff7f0;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:var(--ink)}
+.brand{text-align:center;margin-bottom:32px}
+.brand-icon{font-size:2.8rem;margin-bottom:8px}
+.brand-name{font-size:1.3rem;font-weight:700;color:var(--ink)}
+.brand-sub{font-size:.8rem;color:var(--ink3);margin-top:3px}
+.card{background:var(--surface);border-radius:20px;padding:36px;width:100%;max-width:440px;box-shadow:0 4px 40px rgba(249,115,22,.12),0 1px 4px rgba(0,0,0,.06)}
+.step-bar{display:flex;gap:0;margin-bottom:28px;border-radius:10px;overflow:hidden;border:1.5px solid var(--border)}
+.step{flex:1;padding:9px;text-align:center;font-size:.72rem;font-weight:700;color:var(--ink3);background:var(--bg);transition:all .2s;letter-spacing:.04em}
+.step.active{background:var(--accent);color:#fff}
+.step.done{background:#fef3c7;color:#92400e}
+h2{font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:6px}
+.subtitle{font-size:.8rem;color:var(--ink3);margin-bottom:22px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg label{font-size:.72rem;font-weight:700;color:var(--ink2);letter-spacing:.04em}
+.fc{padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.9rem;color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s;width:100%;background:var(--surface)}
+.fc:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(249,115,22,.12)}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .15s;margin-top:6px}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2);box-shadow:0 4px 16px rgba(249,115,22,.35)}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--ink2);margin-top:10px}
+.btn-outline:hover{border-color:var(--ink2)}
+.links{text-align:center;font-size:.78rem;color:var(--ink3);margin-top:16px}
+.links a{color:var(--accent);text-decoration:none;font-weight:600}
+.success-wrap{text-align:center;padding:12px 0}
+.success-icon{font-size:3.5rem;margin-bottom:12px;animation:pop .4s ease}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.success-title{font-size:1.2rem;font-weight:700;color:var(--ink);margin-bottom:6px}
+.success-sub{font-size:.82rem;color:var(--ink2);line-height:1.6}
+.info-box{background:var(--bg);border:1.5px solid rgba(249,115,22,.2);border-radius:10px;padding:14px;margin:16px 0;text-align:left}
+.info-row{display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0}
+.info-row .lbl{color:var(--ink3)}.info-row .val{font-weight:600;font-family:'DM Mono',monospace;font-size:.8rem}
+.error-msg{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 13px;font-size:.8rem;color:#991b1b;margin-bottom:12px;display:none}
+.error-msg.show{display:block}
+.nav-links{display:flex;justify-content:center;gap:16px;margin-top:20px;font-size:.78rem}
+.nav-links a{color:var(--accent);text-decoration:none;font-weight:600}
+.loading{text-align:center;padding:20px;color:var(--ink3);font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="brand">
+  <div class="brand-icon">🛒</div>
+  <div class="brand-name" id="shop-name">團購社團</div>
+  <div class="brand-sub">加入會員，輕鬆購物</div>
+</div>
+<div class="card" id="main-card">
+  <div class="loading">載入中...</div>
+</div>
+<div class="nav-links">
+  <a href="shop.html">🛍️ 購物商城</a>
+  <a href="myorders.html">📦 我的訂單</a>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAbxs_fRimdgHx3RQYSGAczSwu6lH-CL2Y",
+  authDomain: "my-group-buy-63e36.firebaseapp.com",
+  projectId: "my-group-buy-63e36",
+  storageBucket: "my-group-buy-63e36.firebasestorage.app",
+  messagingSenderId: "893197059676",
+  appId: "1:893197059676:web:701fc2dd1e398836928899"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Load settings
+async function loadSettings() {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'main'));
+    const s = snap.exists() ? snap.data() : {};
+    document.getElementById('shop-name').textContent = s.shopName || '團購社團';
+  } catch(e) {}
+}
+loadSettings();
+
+// Render step 1
+function renderStep1() {
+  document.getElementById('main-card').innerHTML = `
+    <div class="step-bar">
+      <div class="step active" id="s1">① 填寫資料</div>
+      <div class="step" id="s2">② 設定密碼</div>
+      <div class="step" id="s3">③ 完成</div>
+    </div>
+    <h2>填寫基本資料</h2>
+    <p class="subtitle">請填寫您的聯絡資訊，以便我們處理訂單</p>
+    <div class="error-msg" id="err1"></div>
+    <div class="fg"><label>姓名 *</label><input class="fc" id="r-name" placeholder="您的真實姓名"></div>
+    <div class="fg"><label>手機號碼 *</label><input class="fc" id="r-phone" placeholder="09xx-xxx-xxx"></div>
+    <div class="fg"><label>LINE ID / 社群帳號</label><input class="fc" id="r-line" placeholder="方便團主聯絡您"></div>
+    <div class="fg"><label>收貨地址</label><input class="fc" id="r-addr" placeholder="台北市…"></div>
+    <div class="fg"><label>備註（過敏資訊等）</label><input class="fc" id="r-note" placeholder="對堅果過敏、素食者…"></div>
+    <button class="btn btn-primary" id="step1-btn">下一步 →</button>
+  `;
+  document.getElementById('step1-btn').onclick = step1Next;
+}
+renderStep1();
+
+let regData = {};
+
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('show'); }
+function hideErr(id) { const el = document.getElementById(id); if(el) el.classList.remove('show'); }
+
+async function step1Next() {
+  hideErr('err1');
+  const name = document.getElementById('r-name').value.trim();
+  const phone = document.getElementById('r-phone').value.trim();
+  if (!name) { showErr('err1', '請填寫您的姓名'); return; }
+  if (!phone) { showErr('err1', '請填寫手機號碼'); return; }
+  const btn = document.getElementById('step1-btn');
+  btn.textContent = '檢查中...'; btn.disabled = true;
+  try {
+    // Check if phone already registered
+    const q = query(collection(db, 'customers'), where('phone', '==', phone));
+    const snap = await getDocs(q);
+    if (!snap.empty) { showErr('err1', '此手機號碼已註冊過，請直接登入'); btn.textContent = '下一步 →'; btn.disabled = false; return; }
+    regData = { name, phone, line: document.getElementById('r-line').value, addr: document.getElementById('r-addr').value, note: document.getElementById('r-note').value };
+    renderStep2();
+  } catch(e) { showErr('err1', '網路錯誤，請稍後再試'); btn.textContent = '下一步 →'; btn.disabled = false; }
+}
+
+function renderStep2() {
+  document.getElementById('main-card').innerHTML = `
+    <div class="step-bar">
+      <div class="step done" id="s1">① 填寫資料</div>
+      <div class="step active" id="s2">② 設定密碼</div>
+      <div class="step" id="s3">③ 完成</div>
+    </div>
+    <h2>設定登入密碼</h2>
+    <p class="subtitle">之後可用手機號碼 + 密碼登入查看訂單</p>
+    <div class="error-msg" id="err2"></div>
+    <div class="fg"><label>設定密碼 *</label><input class="fc" id="r-pw" type="password" placeholder="至少4個字元"></div>
+    <div class="fg"><label>確認密碼 *</label><input class="fc" id="r-pw2" type="password" placeholder="再輸入一次"></div>
+    <button class="btn btn-primary" id="step2-btn">完成註冊</button>
+    <button class="btn btn-outline" onclick="renderStep1()">← 返回修改</button>
+  `;
+  document.getElementById('step2-btn').onclick = step2Next;
+}
+
+async function step2Next() {
+  hideErr('err2');
+  const pw = document.getElementById('r-pw').value;
+  const pw2 = document.getElementById('r-pw2').value;
+  if (pw.length < 4) { showErr('err2', '密碼至少需要4個字元'); return; }
+  if (pw !== pw2) { showErr('err2', '兩次密碼不一致，請重新輸入'); return; }
+  const btn = document.getElementById('step2-btn');
+  btn.textContent = '註冊中...'; btn.disabled = true;
+  try {
+    const newId = 'c_' + Date.now();
+    const newCust = { id: newId, ...regData, password: pw, createdAt: new Date().toISOString().slice(0,10) };
+    await setDoc(doc(db, 'customers', newId), newCust);
+    sessionStorage.setItem('gbp_user', JSON.stringify({ id: newId, name: newCust.name, phone: newCust.phone }));
+    renderStep3(newCust);
+  } catch(e) { showErr('err2', '儲存失敗，請稍後再試'); btn.textContent = '完成註冊'; btn.disabled = false; }
+}
+
+function renderStep3(cust) {
+  document.getElementById('main-card').innerHTML = `
+    <div class="step-bar">
+      <div class="step done">① 填寫資料</div>
+      <div class="step done">② 設定密碼</div>
+      <div class="step active">③ 完成</div>
+    </div>
+    <div class="success-wrap">
+      <div class="success-icon">🎉</div>
+      <div class="success-title">註冊成功！</div>
+      <p class="success-sub">歡迎加入，您現在可以瀏覽商城並查看訂單囉！</p>
+      <div class="info-box">
+        <div class="info-row"><span class="lbl">姓名</span><span class="val">${cust.name}</span></div>
+        <div class="info-row"><span class="lbl">手機號碼</span><span class="val">${cust.phone}</span></div>
+        <div class="info-row"><span class="lbl">登入方式</span><span class="val">手機號碼 + 密碼</span></div>
+      </div>
+      <button class="btn btn-primary" onclick="location.href='shop.html'">🛍️ 前往購物商城</button>
+      <button class="btn btn-outline" onclick="location.href='myorders.html'">📦 查看我的訂單</button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
